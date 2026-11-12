@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sample Mean vs. Sample Median</title>
+<meta name="description" content="MT3194 group project (Group 11): efficiency, robustness and a Monte Carlo study of the sample mean and the sample median.">
+<style>
+:root{
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --base:#c3c2b7; --accent:#2a78d6; --accent-ink:#184f95; --wash:#eef4fc;
+  --orange:#eb6834; --good:#006300; --code:#f1f0ec;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --base:#383835; --accent:#3987e5; --accent-ink:#86b6ef; --wash:#14202e;
+    --orange:#d95926; --good:#0ca30c; --code:#232322; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --base:#383835; --accent:#3987e5; --accent-ink:#86b6ef; --wash:#14202e;
+  --orange:#d95926; --good:#0ca30c; --code:#232322; color-scheme: dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{margin:0;background:var(--page);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent-ink);text-underline-offset:2px}
+a:hover{color:var(--accent)}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px}
+pre{background:var(--code);padding:14px 16px;border-radius:8px;overflow-x:auto;line-height:1.5;margin:12px 0}
+pre code{background:none;padding:0}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}
+
+/* top bar */
+header.bar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--grid)}
+header.bar .wrap{display:flex;align-items:center;gap:18px;height:52px}
+header.bar .brand{font-weight:650;letter-spacing:-.01em;color:var(--ink);text-decoration:none;white-space:nowrap}
+nav{display:flex;gap:2px;overflow-x:auto;flex:1;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav a{color:var(--ink2);text-decoration:none;padding:6px 10px;border-radius:6px;font-size:.92rem;white-space:nowrap}
+nav a:hover{background:var(--wash);color:var(--ink)}
+button.theme{border:1px solid var(--grid);background:var(--surface);color:var(--ink2);border-radius:8px;padding:5px 10px;font:inherit;font-size:.85rem;cursor:pointer}
+button.theme:hover{border-color:var(--base);color:var(--ink)}
+
+/* hero */
+.hero{padding:56px 0 26px}
+.eyebrow{color:var(--accent-ink);font-weight:600;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase}
+h1{font-size:clamp(2rem,5vw,3rem);line-height:1.1;letter-spacing:-.025em;margin:.35em 0 .3em;font-weight:700}
+.lede{font-size:1.14rem;color:var(--ink2);max-width:760px;margin:0}
+.team{margin-top:16px;color:var(--ink2);font-size:.95rem}
+.team b{color:var(--ink)}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.btn{display:inline-block;padding:9px 16px;border-radius:9px;border:1px solid var(--grid);background:var(--surface);color:var(--ink);text-decoration:none;font-weight:550;font-size:.93rem}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:30px 0 6px}
+.tile{background:var(--surface);border:1px solid var(--grid);border-radius:12px;padding:16px 18px}
+.tile .v{font-size:2rem;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.tile .l{color:var(--ink2);font-size:.88rem;margin-top:6px;line-height:1.4}
+
+/* sections */
+section{padding:44px 0 10px;border-top:1px solid var(--grid);margin-top:36px}
+section:first-of-type{border-top:0;margin-top:0}
+h2{font-size:1.6rem;letter-spacing:-.02em;margin:0 0 6px}
+h2 .n{color:var(--muted);font-weight:500;margin-right:.35em}
+h3{font-size:1.08rem;margin:26px 0 6px}
+p{margin:.55em 0}
+.sub{color:var(--ink2);margin-top:0}
+ul,ol{padding-left:1.25em}
+li{margin:.3em 0}
+.tag{display:inline-block;font-size:.76rem;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--wash);color:var(--accent-ink);vertical-align:middle;margin-left:8px}
+.tag.todo{background:transparent;border:1px dashed var(--base);color:var(--ink2)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--grid);border-radius:12px;padding:16px 18px}
+.card h3{margin-top:0}
+.eq{overflow-x:auto;padding:2px 0}
+
+/* figures & tables */
+figure{margin:22px 0;background:#fff;border:1px solid var(--grid);border-radius:12px;padding:12px 12px 4px}
+figure img{display:block;width:100%;height:auto}
+figcaption{color:#52514e;font-size:.84rem;padding:8px 4px 8px;line-height:1.45}
+.tablewrap{overflow-x:auto;margin:14px 0;background:var(--surface);border:1px solid var(--grid);border-radius:12px;padding:6px 8px}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+caption{caption-side:top;text-align:left;color:var(--ink2);font-size:.84rem;padding:8px 6px 6px}
+th,td{padding:5px 9px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--ink2);font-weight:600;border-bottom:1px solid var(--base);font-size:.8rem}
+tbody tr{border-bottom:1px solid var(--grid)}
+tbody tr:last-child{border-bottom:0}
+tbody tr.med td{background:var(--wash)}
+tr.theory td{color:var(--ink2);font-style:italic}
+td b{color:var(--accent-ink)}
+.note{color:var(--ink2);font-size:.86rem}
+
+/* team table */
+.own{width:100%}
+.own td,.own th{text-align:left;white-space:normal}
+
+ol.refs{font-size:.92rem;color:var(--ink2)}
+footer{border-top:1px solid var(--grid);margin-top:50px;padding:24px 0 60px;color:var(--muted);font-size:.86rem}
+@media (max-width:600px){ .hero{padding-top:34px} header.bar .brand{display:none} }
+</style>
+<script>
+window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
+</head>
+<body>
+
+<header class="bar"><div class="wrap">
+  <a class="brand" href="#top">Mean vs. Median</a>
+  <nav aria-label="Sections">
+    <a href="#overview">Overview</a><a href="#theory">Theory</a><a href="#robustness">Robustness</a>
+    <a href="#simulation">Simulation</a><a href="#application">Application</a><a href="#team">Team</a><a href="#references">References</a>
+  </nav>
+  <button class="theme" id="theme" type="button" aria-label="Toggle dark mode">Theme</button>
+</div></header>
+
+<main class="wrap" id="top">
+
+<div class="hero">
+  <div class="eyebrow">MT3194 Statistical Inference · Group project</div>
+  <h1>Sample Mean vs. Sample Median</h1>
+  <p class="lede">How well do the two classic estimators of centre perform when data leave the normal model? We derive their variances, compare them with the Cramér–Rao bound, study their robustness, and test everything by Monte Carlo under heavy tails and outliers.</p>
+  <p class="team"><b>Group 11</b> · Bhumika · Parth · Satyam · Sriharipriya · Vishwabharathi</p>
+  <div class="btns">
+    <a class="btn primary" href="#simulation">See the simulation results</a>
+    <a class="btn" href="assets/simulation_report.pdf">Simulation report (PDF, 2 pages)</a>
+    <a class="btn" href="@@REPO@@">Code on GitHub</a>
+  </div>
+  <div class="tiles">
+    <div class="tile"><div class="v">@@areNormalThy@@</div><div class="l">ARE of the median at the normal model (2/π): it needs about 57% more data than the mean.</div></div>
+    <div class="tile"><div class="v">ν* ≈ @@tCross@@</div><div class="l">Student-t degrees of freedom below which the median beats the mean.</div></div>
+    <div class="tile"><div class="v">@@cauchyEffMed@@</div><div class="l">Median's efficiency against the Cramér–Rao bound for Cauchy data, where the mean does not converge at all.</div></div>
+    <div class="tile"><div class="v">@@ratioShiftTen@@×</div><div class="l">Mean's MSE relative to the median's with 10% gross outliers (n = 100).</div></div>
+  </div>
+</div>
+
+<section id="overview">
+  <h2><span class="n">1</span>Overview</h2>
+  <p class="sub">Four components, one question: <em>when should you prefer the median over the mean?</em></p>
+  <div class="grid2">
+    <div class="card"><h3>Theory</h3><p>Exact and asymptotic variances for normal data, the Cramér–Rao lower bound, and the asymptotic relative efficiency (ARE) for normal, Student-t, Laplace and Cauchy models.</p></div>
+    <div class="card"><h3>Robustness</h3><p>Influence functions, breakdown points and the Tukey contamination model: why one wild observation ruins the mean but barely moves the median.</p></div>
+    <div class="card"><h3>Simulation</h3><p>Monte Carlo study (10<sup>5</sup> replications per cell) of bias, variance and MSE for the mean, median and three compromise estimators.</p></div>
+    <div class="card"><h3>Application</h3><p>Can the ARE be estimated from a real sample and predict the winner? Tested on anonymous class data with the bootstrap.</p></div>
+  </div>
+  <p class="note" style="margin-top:14px">Convention used throughout: ARE = Var(mean) / Var(median). Values above 1 favour the median.</p>
+</section>
+
+<section id="theory">
+  <h2><span class="n">2</span>Theory <span class="tag todo">summary · full section by the group</span></h2>
+  <p class="sub">Key results the other sections build on. Each is checked numerically in the test-suite.</p>
+
+  <h3>Normal model</h3>
+  <p>For \(X_i\overset{iid}{\sim}N(\mu,\sigma^2)\): \(\operatorname{Var}(\bar X_n)=\sigma^2/n\) and the Fisher information is \(I(\mu)=1/\sigma^2\), so the Cramér–Rao bound \(1/(nI)=\sigma^2/n\) is attained: \(\bar X_n\) is efficient.</p>
+
+  <h3>The sample median</h3>
+  <p>If \(f\) is continuous and positive at the median \(m\), then</p>
+  <div class="eq">\[\sqrt n\,(M_n-m)\ \xrightarrow{d}\ N\!\Big(0,\ \frac{1}{4f(m)^2}\Big).\]</div>
+  <p><em>Sketch.</em> \(\{M_n\le m+x/\sqrt n\}=\{S_n\ge n/2\}\) with \(S_n\sim\mathrm{Bin}(n,p_n)\), \(p_n=F(m+x/\sqrt n)\approx\tfrac12+f(m)x/\sqrt n\); the binomial CLT gives probability \(\to\Phi(2f(m)x)\).
+  At \(N(\mu,\sigma^2)\), \(f(m)=1/(\sigma\sqrt{2\pi})\), so \(\operatorname{Var}(M_n)\approx\pi\sigma^2/(2n)\).</p>
+
+  <h3>Asymptotic relative efficiency</h3>
+  <div class="eq">\[\operatorname{ARE}(M_n,\bar X_n)=\frac{\operatorname{Var}(\bar X_n)}{\operatorname{Var}(M_n)}\;\to\;4\sigma^2 f(m)^2 .\]</div>
+  <div class="tablewrap"><table>
+    <caption>ARE of the median against the mean (above 1: median wins) and Cramér–Rao bound for the location parameter (n · CRLB = 1/I)</caption>
+    <thead><tr><th>Model</th><th>ARE</th><th>n · CRLB</th><th>Comment</th></tr></thead>
+    <tbody>
+      <tr><td>Normal</td><td>2/π ≈ 0.637</td><td>σ²</td><td>mean attains the bound</td></tr>
+      <tr><td>t<sub>ν</sub>, ν &gt; 2</td><td>\(\tfrac{\nu}{\nu-2}\,4f(0)^2\)</td><td>\(\tfrac{\nu+3}{\nu+1}\)</td><td>ν = 3: 1.621 · ν = 4: 1.125 · ν = 5: 0.961 · crossover ν* ≈ @@tCross@@</td></tr>
+      <tr><td>Laplace</td><td>2</td><td>1</td><td>the median is the MLE and attains the bound</td></tr>
+      <tr><td>Cauchy (t<sub>1</sub>)</td><td>∞</td><td>2</td><td>\(\bar X_n\overset{d}{=}X_1\) (characteristic function \(e^{-|t|}\)): not consistent. \(\operatorname{Var}(M_n)\approx\pi^2/(4n)\), efficiency \(8/\pi^2\approx0.81\)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="robustness">
+  <h2><span class="n">3</span>Robustness <span class="tag todo">summary · full section by the group</span></h2>
+  <p class="sub">Efficiency is a property at the model; robustness is what happens when the model is slightly wrong.</p>
+  <h3>Influence function</h3>
+  <p>The effect of adding an observation at \(y\): \(\mathrm{IF}(y)=\lim_{\varepsilon\to0}[T((1-\varepsilon)F+\varepsilon\delta_y)-T(F)]/\varepsilon\). It also gives the asymptotic variance, \(\operatorname{AVar}=E[\mathrm{IF}^2]\).</p>
+  <div class="eq">\[\mathrm{IF}_{\bar X}(y)=y-\mu\ \ (\text{unbounded}),\qquad \mathrm{IF}_{M}(y)=\frac{\operatorname{sign}(y-m)}{2f(m)}\ \ (\text{bounded}).\]</div>
+  <p>At \(N(0,1)\) the median's influence never exceeds \(\sqrt{\pi/2}\approx1.25\) however wild the observation.</p>
+  <h3>Breakdown point</h3>
+  <p>The largest fraction of observations that can be replaced by arbitrary values before the estimate can be driven to infinity.</p>
+  <div class="tablewrap"><table>
+    <caption>Breakdown points: theory and what the simulation measured (n = 101; one run of 1,000 clean samples)</caption>
+    <thead><tr><th>Estimator</th><th>Theory</th><th>Observed</th></tr></thead>
+    <tbody>
+      <tr><td>Sample mean</td><td>0</td><td>k = @@bdKMean@@ (@@bdPctMean@@%)</td></tr>
+      <tr><td>10% trimmed mean</td><td>10%</td><td>k = @@bdKTrim@@ (@@bdPctTrim@@%)</td></tr>
+      <tr><td>Hodges–Lehmann</td><td>1 − 1/√2 ≈ 29.3%</td><td>k = @@bdKHL@@ (@@bdPctHL@@%)</td></tr>
+      <tr><td>Sample median</td><td>50%</td><td>k = @@bdKMedian@@ (@@bdPctMedian@@%)</td></tr>
+      <tr><td>Huber (MAD scale)</td><td>50%</td><td>k = @@bdKHuber@@ (@@bdPctHuber@@%)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Observed breakdown is the smallest k for which the median |estimate| exceeds 10³ after k observations are replaced by 10⁶; for n = 101 the exact maximum is k = 51 (50.5%).</p>
+</section>
+
+<section id="simulation">
+  <h2><span class="n">4</span>Simulation <span class="tag">complete</span></h2>
+  <p class="sub">Owner: Parth. A two-page report with all tables and figures is in <a href="assets/simulation_report.pdf">simulation_report.pdf</a>; the code is in <code>simulation/</code>.</p>
+
+  <h3>Design</h3>
+  <ul>
+    <li><b>Estimators:</b> sample mean and median (main grid), plus the 10% trimmed mean, Huber M-estimator (k = 1.345, MAD scale) and Hodges–Lehmann estimator (median of Walsh averages).</li>
+    <li><b>Models</b> (centre θ = 0): N(0,1); Student-t with ν ∈ {1, 2, 3, 4, 5, 10, 30} (t<sub>1</sub> is the Cauchy); Laplace; Tukey scale contamination (1−ε)N(0,1) + εN(0,3²); asymmetric outliers (1−ε)N(0,1) + εN(10,1); ε ∈ {0.01, 0.05, 0.10, 0.20}.</li>
+    <li><b>Grid:</b> n ∈ {10, 25, 50, 100, 500, 1000}, B = @@Bmain@@ replications per cell (comparators: n ∈ {25, 100}, B = @@Bcomp@@).</li>
+    <li><b>Metrics:</b> bias, variance, MSE with Monte Carlo standard errors from 20 batches (relative s.e. of every variance in Table 1 ≤ @@maxRelSE@@%), n·Var against the asymptotic limits and the Cramér–Rao bound, ARE, and quantiles of |error| when moments do not exist.</li>
+    <li><b>Reproducible:</b> master seed @@seedValue@@, one independent random stream per cell, 35 automated tests.</li>
+  </ul>
+
+  <figure>
+    <img src="assets/fig_core.png" alt="Three panels. (a) n times variance of mean and median for normal data against sample size, converging to 1 and pi over 2. (b) Efficiency of the median against the mean for Student-t as a function of degrees of freedom, with simulated points on the theoretical curve and crossover near 4.68. (c) Running mean and running median along four Cauchy sample paths: the mean never settles, the median converges to zero.">
+    <figcaption><b>Figure 1.</b> (a) n·Var at N(0,1) with 95% Monte Carlo bars; dashed: the limits 1 and π/2. (b) Simulated Var(mean)/Var(median) for t<sub>ν</sub> against the asymptotic curve; the median wins left of ν*. (c) Running mean and median on four Cauchy streams.</figcaption>
+  </figure>
+
+  <h3>Findings</h3>
+  <ul>
+    <li><b>Normal data.</b> The mean attains the bound (n·Var = @@nvarMeanNormalThousand@@ at n = 1000). The median's n·Var climbs from @@nvarMedNormalTen@@ at n = 10 to @@nvarMedNormalThousand@@, giving ARE = @@areNormalSim@@ against 2/π = @@areNormalThy@@. The low value at n = 10 is the even-n effect: an even-sized sample averages two central order statistics.</li>
+    <li><b>Student-t.</b> Simulated ARE matches 4σ²f(0)² within Monte Carlo error (t<sub>3</sub>: @@areTthreeSim@@ vs @@areTthreeThy@@; t<sub>4</sub>: @@areTfourSim@@ vs @@areTfourThy@@; t<sub>5</sub>: @@areTfiveSim@@ vs @@areTfiveThy@@). The median overtakes the mean at ν* = @@tCross@@.</li>
+    <li><b>Laplace.</b> The median is the MLE and the ARE tends to 2, but slowly (@@areLapHundred@@ at n = 100, @@areLapThousand@@ at n = 1000) because of the cusp of the density at its median.</li>
+    <li><b>Cauchy.</b> The mean's |error| quantiles never shrink (median |error| @@cauchyMeanQfiftyRange@@ for every n); the median converges, with n·Var = @@cauchyMedNvarThousand@@ against π²/4 = @@cauchyMedNvarThy@@, efficiency @@cauchyEffMed@@ against the bound.</li>
+    <li><b>Contamination.</b> Symmetric scale contamination erodes the mean's advantage: ARE = @@areTukeyFive@@ at ε = 0.05, @@areTukeyTen@@ at 0.10, @@areTukeyTwenty@@ at 0.20. Asymmetric outliers are far worse: the mean's MSE is @@mseShiftFiveMean@@ vs @@mseShiftFiveMedian@@ for the median at ε = 0.05 (a factor @@ratioShiftFive@@) and a factor @@ratioShiftTen@@ at ε = 0.10.</li>
+    <li><b>Compromise estimators.</b> At the normal, trimmed mean, Huber and Hodges–Lehmann lose only about 6–7% (n·MSE @@cmpNormalHL@@–@@cmpNormalHuber@@ vs @@cmpNormalMean@@) while the median loses 55% (@@cmpNormalMedian@@); under moderate tails (t<sub>3</sub>, t<sub>5</sub>, Tukey) they beat both mean and median. The median wins only for very heavy tails or many outliers.</li>
+  </ul>
+
+  <div class="tablewrap">@@TABLE_ARE@@</div>
+
+  <figure>
+    <img src="assets/fig_robust.png" alt="Four panels. (d) Mean squared error against the fraction of gross outliers on a log scale: the mean grows fastest, the median slowest. (e) n times MSE against the fraction of scale contamination: the mean crosses the median near ten percent. (f) Sensitivity curves: the mean is a straight line, all others are bounded. (g) Breakdown experiment: the mean fails at the first outlier, the trimmed mean at ten percent, Hodges-Lehmann near 29 percent, median and Huber at 50 percent.">
+    <figcaption><b>Figure 2.</b> Robustness (n = 100 unless stated). (d, e) MSE vs contamination; dotted: first-order theory. (f) Sensitivity curves SC<sub>n</sub>(y) = n·[T(x<sub>1</sub>,…,x<sub>n−1</sub>, y) − T(x<sub>1</sub>,…,x<sub>n−1</sub>)] with x<sub>i</sub> = Φ<sup>−1</sup>((i − ½)/(n − 1)); trimmed mean (wide) and Huber (thin) nearly coincide. (g) k of n = 101 clean points replaced by 10<sup>6</sup>.</figcaption>
+  </figure>
+
+  <div class="tablewrap">@@TABLE_COMP@@</div>
+
+  <h3>Practical guidelines</h3>
+  <ul>
+    <li><b>Clean, near-normal data:</b> use the mean; the median wastes about 36% of the information.</li>
+    <li><b>Heavy tails</b> (t<sub>ν</sub> with ν ≤ 4, or infinite variance) or about 10% or more symmetric contamination: prefer the median.</li>
+    <li><b>Asymmetric gross outliers:</b> never use the raw mean; prefer the median or a robust compromise.</li>
+    <li><b>When unsure:</b> Huber or Hodges–Lehmann cost under 7% at the normal and are never far from the best.</li>
+    <li><b>Caveat:</b> under skewness the mean and the median target different parameters, so these comparisons presume symmetry.</li>
+  </ul>
+
+  <h3>Reproduce</h3>
+<pre><code>git clone @@REPO@@
+cd mean-vs-median
+pip install -r requirements.txt
+make test      # 35 tests, about 5 s
+make sim       # full study, a few minutes on 2 cores
+make report    # compile the 2-page report</code></pre>
+  <p class="note">Data behind every plot: <a href="assets/data/main_grid.csv">main_grid.csv</a> · <a href="assets/data/t_sweep.csv">t_sweep.csv</a> · <a href="assets/data/comparators.csv">comparators.csv</a> · <a href="assets/data/cauchy_paths.csv">cauchy_paths.csv</a> · <a href="assets/data/sensitivity.csv">sensitivity.csv</a> · <a href="assets/data/breakdown.csv">breakdown.csv</a></p>
+</section>
+
+<section id="application">
+  <h2><span class="n">5</span>Application <span class="tag todo">results to be added</span></h2>
+  <p class="sub">Can the ARE be estimated from one sample, and does it predict which estimator wins?</p>
+  <p>We collect anonymous class data on variables of different shape (for example height, hours of sleep, Instagram followers; no names recorded) and compute the plug-in estimate</p>
+  <div class="eq">\[\widehat{\operatorname{ARE}}(M_n,\bar X_n)\approx 4\,\hat\sigma^2\,\hat f(\hat m)^2,\]</div>
+  <p>with \(\hat\sigma^2\) the sample variance, \(\hat m\) the sample median and \(\hat f\) a Gaussian kernel density estimate. The prediction (mean if \(\widehat{\operatorname{ARE}}<1\), median if \(>1\)) is checked with \(10^4\) bootstrap resamples by comparing \(\operatorname{Var}^*(\bar X)/\operatorname{Var}^*(M)\) with \(\widehat{\operatorname{ARE}}\).</p>
+  <p class="note">Planned caveats: the plug-in estimate is noisy and biased low at small n (a synthetic check at n = 40 gave mean 0.55 and s.d. 0.10 under normality), so intervals matter; for skewed variables the two estimators target different parameters, so the ARE compares precision only.</p>
+</section>
+
+<section id="team">
+  <h2><span class="n">6</span>Team &amp; sections</h2>
+  <div class="tablewrap"><table class="own">
+    <thead><tr><th>Component</th><th>Folder</th><th>Owner</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Theory</td><td><code>theory/</code></td><td>to be filled in</td><td>summary on this page</td></tr>
+      <tr><td>Robustness</td><td><code>robustness/</code></td><td>to be filled in</td><td>summary on this page; evidence from the simulation</td></tr>
+      <tr><td>Simulation</td><td><code>simulation/</code>, <code>report/</code></td><td>Parth</td><td>complete (code, data, tests, 2-page report)</td></tr>
+      <tr><td>Application</td><td><code>application/</code></td><td>to be filled in</td><td>method planned; results to be added</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Final report due by email on 13 November 2026, 12:00 noon.</p>
+</section>
+
+<section id="references">
+  <h2><span class="n">7</span>References</h2>
+  <ol class="refs">
+    <li>Tukey, J. W. (1960). A survey of sampling from contaminated distributions. In <em>Contributions to Probability and Statistics</em>, Stanford University Press.</li>
+    <li>Huber, P. J. (1964). Robust estimation of a location parameter. <em>Ann. Math. Statist.</em> 35, 73–101. <a href="https://doi.org/10.1214/aoms/1177703732">doi:10.1214/aoms/1177703732</a></li>
+    <li>Hodges, J. L. &amp; Lehmann, E. L. (1963). Estimates of location based on rank tests. <em>Ann. Math. Statist.</em> 34, 598–611. <a href="https://doi.org/10.1214/aoms/1177704172">doi:10.1214/aoms/1177704172</a></li>
+    <li>Hodges, J. L. &amp; Lehmann, E. L. (1967). On medians and quasi medians. <em>J. Amer. Statist. Assoc.</em> 62, 926–931.</li>
+    <li>Andrews, D. F., Bickel, P. J., Hampel, F. R., Huber, P. J., Rogers, W. H. &amp; Tukey, J. W. (1972). <em>Robust Estimates of Location: Survey and Advances</em>. Princeton University Press.</li>
+    <li>Hampel, F. R., Ronchetti, E. M., Rousseeuw, P. J. &amp; Stahel, W. A. (1986). <em>Robust Statistics: The Approach Based on Influence Functions</em>. Wiley.</li>
+    <li>Huber, P. J. &amp; Ronchetti, E. M. (2009). <em>Robust Statistics</em>, 2nd ed. Wiley.</li>
+    <li>van der Vaart, A. W. (1998). <em>Asymptotic Statistics</em>. Cambridge University Press.</li>
+    <li>Casella, G. &amp; Berger, R. L. (2002). <em>Statistical Inference</em>, 2nd ed. Duxbury.</li>
+    <li>Morris, T. P., White, I. R. &amp; Crowther, M. J. (2019). Using simulation studies to evaluate statistical methods. <em>Statistics in Medicine</em> 38, 2074–2102. <a href="https://doi.org/10.1002/sim.8086">doi:10.1002/sim.8086</a></li>
+  </ol>
+</section>
+
+<footer>Built from the saved simulation results by <code>tools/build_site.py</code>; every number on this page comes from <code>simulation/results/</code>. © Group 11, MT3194.</footer>
+</main>
+
+<script>
+(function(){
+  var btn=document.getElementById('theme'), root=document.documentElement;
+  try{var s=localStorage.getItem('theme'); if(s) root.setAttribute('data-theme',s);}catch(e){}
+  btn.addEventListener('click',function(){
+    var dark=root.getAttribute('data-theme')==='dark' ||
+      (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var next=dark?'light':'dark';
+    root.setAttribute('data-theme',next);
+    try{localStorage.setItem('theme',next);}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

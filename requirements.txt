@@ -1,0 +1,7 @@
+# Python >= 3.10.  Versions below are the ones the published results were produced with;
+# anything newer should work, older majors are untested.
+numpy>=2.0
+scipy>=1.13
+pandas>=2.2
+matplotlib>=3.9
+pytest>=8.0

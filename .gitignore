@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# LaTeX build products (the compiled PDF is kept)
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# smoke-test output of `run_all.py --quick`
+simulation/results_quick/
+
+# scratch renders of report pages
+report/pg-*.png
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
